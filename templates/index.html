@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineMatch · Movie Recommender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Variables ─────────────────────────────────────────── */
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #12121a;
+      --border:    #2a2a3a;
+      --gold:      #e8b04b;
+      --gold-dim:  #a07830;
+      --text:      #e8e4dc;
+      --muted:     #7a7690;
+      --card-bg:   #16161f;
+      --glow:      rgba(232, 176, 75, 0.15);
+    }
+
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grain overlay ─────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 24px 100px;
+    }
+
+    /* ── Header ────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 64px;
+      animation: fadeUp .7s ease both;
+    }
+
+    .logo-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .reel-icon {
+      width: 38px; height: 38px;
+      opacity: .85;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 3.8rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    h1 span { color: var(--gold); }
+
+    .tagline {
+      font-size: .95rem;
+      color: var(--muted);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-weight: 300;
+    }
+
+    .divider {
+      width: 48px; height: 2px;
+      background: var(--gold);
+      margin: 18px auto 0;
+      border-radius: 2px;
+    }
+
+    /* ── Search card ───────────────────────────────────────── */
+    .search-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: 0 4px 60px rgba(0,0,0,.5);
+      animation: fadeUp .7s .15s ease both;
+    }
+
+    label {
+      display: block;
+      font-size: .78rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    /* ── Custom select ─────────────────────────────────────── */
+    .select-wrapper {
+      position: relative;
+      margin-bottom: 28px;
+    }
+
+    select {
+      width: 100%;
+      appearance: none;
+      background: var(--bg);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 15px 48px 15px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 400;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 16px; top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--gold);
+    }
+
+    /* ── Button ────────────────────────────────────────────── */
+    button {
+      width: 100%;
+      padding: 15px 24px;
+      background: var(--gold);
+      color: #0a0a0f;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .2s, transform .15s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,.15);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+
+    button:hover { background: #f0c060; box-shadow: 0 8px 32px rgba(232,176,75,.3); transform: translateY(-1px); }
+    button:hover::after { opacity: 1; }
+    button:active { transform: translateY(0); }
+    button:disabled { background: var(--gold-dim); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── Results section ───────────────────────────────────── */
+    #results-section {
+      margin-top: 52px;
+      animation: fadeUp .5s ease both;
+      display: none;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .results-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .results-header .badge {
+      background: var(--gold);
+      color: #0a0a0f;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Movie cards ───────────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .movie-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      opacity: 0;
+      transform: translateY(18px);
+      animation: cardIn .45s ease forwards;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+
+    .movie-card:hover {
+      border-color: var(--gold-dim);
+      background: #1c1c28;
+      transform: translateX(4px);
+    }
+
+    .card-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: var(--border);
+      min-width: 36px;
+      line-height: 1;
+      transition: color .2s;
+    }
+
+    .movie-card:hover .card-num { color: var(--gold-dim); }
+
+    .card-icon {
+      width: 40px; height: 40px;
+      background: rgba(232,176,75,.08);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    /* stagger cards */
+    .movie-card:nth-child(1) { animation-delay: .05s; }
+    .movie-card:nth-child(2) { animation-delay: .12s; }
+    .movie-card:nth-child(3) { animation-delay: .19s; }
+    .movie-card:nth-child(4) { animation-delay: .26s; }
+    .movie-card:nth-child(5) { animation-delay: .33s; }
+
+    /* ── Error state ───────────────────────────────────────── */
+    .error-msg {
+      color: #e07070;
+      font-size: .9rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ── Spinner ───────────────────────────────────────────── */
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2.5px solid rgba(10,10,15,.3);
+      border-top-color: #0a0a0f;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto;
+    }
+
+    button.loading .btn-text { display: none; }
+    button.loading .spinner  { display: block; }
+
+    /* ── Keyframes ─────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    @keyframes cardIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      margin-top: 80px;
+      color: var(--muted);
+      font-size: .8rem;
+      letter-spacing: .05em;
+      animation: fadeUp .7s .4s ease both;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-line">
+      <!-- Film reel SVG icon -->
+      <svg class="reel-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="19" cy="19" r="18" stroke="#e8b04b" stroke-width="1.5"/>
+        <circle cx="19" cy="19" r="7"  stroke="#e8b04b" stroke-width="1.5"/>
+        <circle cx="19" cy="7"  r="2.5" fill="#e8b04b"/>
+        <circle cx="19" cy="31" r="2.5" fill="#e8b04b"/>
+        <circle cx="7"  cy="19" r="2.5" fill="#e8b04b"/>
+        <circle cx="31" cy="19" r="2.5" fill="#e8b04b"/>
+        <circle cx="10.5" cy="10.5" r="2.5" fill="#e8b04b"/>
+        <circle cx="27.5" cy="27.5" r="2.5" fill="#e8b04b"/>
+        <circle cx="27.5" cy="10.5" r="2.5" fill="#e8b04b"/>
+        <circle cx="10.5" cy="27.5" r="2.5" fill="#e8b04b"/>
+      </svg>
+      <h1>Cine<span>Match</span></h1>
+    </div>
+    <p class="tagline">AI-Powered Movie Recommendations</p>
+    <div class="divider"></div>
+  </header>
+
+  <!-- Search card -->
+  <div class="search-card">
+    <label for="movie-select">Choose a movie you like</label>
+    <div class="select-wrapper">
+      <select id="movie-select">
+        <option value="" disabled selected>— Select a movie —</option>
+        {% for movie in movies %}
+        <option value="{{ movie }}">{{ movie }}</option>
+        {% endfor %}
+      </select>
+      <svg class="select-arrow" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 10.5L2.5 5h11L8 10.5z"/>
+      </svg>
+    </div>
+
+    <button id="recommend-btn" disabled>
+      <span class="btn-text">✦ &nbsp;Find Similar Movies</span>
+      <div class="spinner"></div>
+    </button>
+
+    <p class="error-msg" id="error-msg">Something went wrong. Please try again.</p>
+  </div>
+
+  <!-- Results -->
+  <section id="results-section">
+    <div class="results-header">
+      <h2>Recommended for you</h2>
+      <span class="badge">Top 5</span>
+    </div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </section>
+
+  <footer>Built with Flask &amp; Machine Learning &nbsp;·&nbsp; CineMatch</footer>
+</div>
+
+<script>
+  const select  = document.getElementById("movie-select");
+  const btn     = document.getElementById("recommend-btn");
+  const section = document.getElementById("results-section");
+  const grid    = document.getElementById("cards-grid");
+  const errMsg  = document.getElementById("error-msg");
+
+  // Enable button only when a movie is chosen
+  select.addEventListener("change", () => {
+    btn.disabled = !select.value;
+    errMsg.style.display = "none";
+  });
+
+  btn.addEventListener("click", async () => {
+    const title = select.value;
+    if (!title) return;
+
+    // Loading state
+    btn.classList.add("loading");
+    btn.disabled = true;
+    errMsg.style.display = "none";
+    section.style.display = "none";
+    grid.innerHTML = "";
+
+    try {
+      const res  = await fetch("/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title })
+      });
+      const data = await res.json();
+
+      if (!data.recommendations || data.recommendations.length === 0) {
+        throw new Error("No recommendations found.");
+      }
+
+      // Build cards
+      data.recommendations.forEach((movie, i) => {
+        const card = document.createElement("div");
+        card.className = "movie-card";
+        card.innerHTML = `
+          <span class="card-num">${String(i + 1).padStart(2, "0")}</span>
+          <div class="card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8b04b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+          </div>
+          <span class="card-title">${movie}</span>
+        `;
+        grid.appendChild(card);
+      });
+
+      section.style.display = "block";
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (e) {
+      errMsg.textContent = e.message || "Something went wrong. Please try again.";
+      errMsg.style.display = "block";
+    } finally {
+      btn.classList.remove("loading");
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
